@@ -319,9 +319,9 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
-export function fieldDefs(spec: ExtendedUnitSpec): FieldDef[] {
+export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec): FieldDef[] {
   // TODO: refactor this once we have composition
-  return vlEncoding.fieldDefs(spec.encoding);
+  return isLayerSpec(spec) ? vlEncoding.fieldDefs(spec.layers[0].encoding) : vlEncoding.fieldDefs(spec.encoding);
 };
 
 export function getCleanSpec(spec: ExtendedUnitSpec): ExtendedUnitSpec {
