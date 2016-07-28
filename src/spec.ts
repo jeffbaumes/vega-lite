@@ -4,7 +4,7 @@ import {Config, defaultOverlayConfig, AreaOverlay} from './config';
 import {Data} from './data';
 import {Encoding, UnitEncoding, has, isRanged} from './encoding';
 import {Facet} from './facet';
-import {FieldDef} from './fielddef';
+import {FieldDef, identical} from './fielddef';
 import {Mark, ERRORBAR, TICK, AREA, RULE, LINE, POINT} from './mark';
 import {stack} from './stack';
 import {Transform} from './transform';
@@ -319,9 +319,31 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
+function hasFieldDef(fieldDefs: FieldDef[], fieldDef: FieldDef): boolean {
+  for (let i = 0; i < fieldDefs.length; i++) {
+    if (identical(fieldDefs[i], fieldDef)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec): FieldDef[] {
   // TODO: refactor this once we have composition
-  return isLayerSpec(spec) ? vlEncoding.fieldDefs(spec.layers[0].encoding) : vlEncoding.fieldDefs(spec.encoding);
+  if (isLayerSpec(spec)) {
+    let fieldDefsAllLayers: FieldDef[] = [];
+    for (let i = 0; i < spec.layers.length; i++) {
+      let fieldDefsInALayer = vlEncoding.fieldDefs(spec.layers[i].encoding);
+      for (let j = 0; j < fieldDefsInALayer.length; j++) {
+        if (!hasFieldDef(fieldDefsAllLayers, fieldDefsInALayer[j])) {
+          fieldDefsAllLayers.push(fieldDefsInALayer[j]);
+        }
+      }
+    }
+    return fieldDefsAllLayers;
+  } else {
+    return vlEncoding.fieldDefs(spec.encoding);
+  }
 };
 
 export function getCleanSpec(spec: ExtendedUnitSpec): ExtendedUnitSpec {

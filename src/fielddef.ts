@@ -60,6 +60,17 @@ export interface FieldDef {
   title?: string;
 }
 
+/* Checks if two FieldDef are identical */
+export function identical(f1: FieldDef, f2: FieldDef): boolean {
+  if ( (f1.field !== f2.field) || (f1.type !== f2.type) || (f1.value !== f2.value) ||
+    (f1.timeUnit !== f2.timeUnit) || (f1.bin !== f2.bin) || (f1.aggregate !== f2.aggregate) ||
+    (f1.title !== f2.title) ) {
+      return false;
+  } else {
+    return true;
+  }
+}
+
 export const aggregate = {
   type: 'string',
   enum: AGGREGATE_OPS,
