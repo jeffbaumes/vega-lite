@@ -328,19 +328,30 @@ function hasFieldDef(fieldDefs: FieldDef[], fieldDef: FieldDef): boolean {
   return false;
 }
 
-export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec): FieldDef[] {
-  // TODO: refactor this once we have composition
-  if (isLayerSpec(spec)) {
-    let fieldDefsAllLayers: FieldDef[] = [];
-    for (let i = 0; i < spec.layers.length; i++) {
-      let fieldDefsInALayer = vlEncoding.fieldDefs(spec.layers[i].encoding);
-      for (let j = 0; j < fieldDefsInALayer.length; j++) {
-        if (!hasFieldDef(fieldDefsAllLayers, fieldDefsInALayer[j])) {
-          fieldDefsAllLayers.push(fieldDefsInALayer[j]);
-        }
+function fieldDefsOfAllLayers(spec: LayerSpec): FieldDef[] {
+  let fieldDefs: FieldDef[] = [];
+  for (let i = 0; i < spec.layers.length; i++) {
+    let fieldDefsInALayer = vlEncoding.fieldDefs(spec.layers[i].encoding);
+    for (let j = 0; j < fieldDefsInALayer.length; j++) {
+      if (!hasFieldDef(fieldDefs, fieldDefsInALayer[j])) {
+        fieldDefs.push(fieldDefsInALayer[j]);
       }
     }
-    return fieldDefsAllLayers;
+  }
+  return fieldDefs;
+}
+
+export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec | FacetSpec): FieldDef[] {
+  // TODO: refactor this once we have composition
+  if (isLayerSpec(spec)) {
+    return fieldDefsOfAllLayers(spec);
+  } else if (isFacetSpec(spec)) {
+    let facet = spec.spec;
+    if (isLayerSpec(facet)) {
+      return fieldDefsOfAllLayers(facet);
+    } else {
+      return vlEncoding.fieldDefs(facet);
+    }
   } else {
     return vlEncoding.fieldDefs(spec.encoding);
   }
