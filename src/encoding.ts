@@ -1,7 +1,7 @@
 // utility for encoding mapping
 import {FieldDef, PositionChannelDef, FacetChannelDef, ChannelDefWithLegend, OrderChannelDef} from './fielddef';
 import {Channel, CHANNELS} from './channel';
-import {isArray, some} from './util';
+import {hash, isArray, some} from './util';
 
 // TODO: once we decompose facet, rename this to Encoding
 export interface UnitEncoding {
@@ -132,18 +132,29 @@ export function isRanged(encoding: Encoding) {
   return encoding && ((!!encoding.x && !!encoding.x2) || (!!encoding.y && !!encoding.y2));
 }
 
-export function fieldDefs(encoding: Encoding): FieldDef[] {
+export function fieldDefs(encodings: Encoding[]): FieldDef[] {
   let arr = [];
-  CHANNELS.forEach(function(channel) {
-    if (has(encoding, channel)) {
-      if (isArray(encoding[channel])) {
-        encoding[channel].forEach(function(fieldDef) {
-          arr.push(fieldDef);
-        });
-      } else {
-        arr.push(encoding[channel]);
+  let dict = {};
+  encodings.forEach(function(encoding) {
+    CHANNELS.forEach(function(channel) {
+      if (has(encoding, channel)) {
+        if (isArray(encoding[channel])) {
+          encoding[channel].forEach(function(fieldDef) {
+            let key = hash(fieldDef);
+            if (!dict[key]) {
+              dict[key] = fieldDef;
+              arr.push(fieldDef);
+            }
+          });
+        } else {
+          let key = hash(encoding[channel]);
+          if (!dict[key]) {
+            dict[key] = encoding[channel];
+            arr.push(encoding[channel]);
+          }
+        }
       }
-    }
+    });
   });
   return arr;
 };

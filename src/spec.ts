@@ -4,13 +4,13 @@ import {Config, defaultOverlayConfig, AreaOverlay} from './config';
 import {Data} from './data';
 import {Encoding, UnitEncoding, has, isRanged} from './encoding';
 import {Facet} from './facet';
-import {FieldDef, identical} from './fielddef';
+import {FieldDef} from './fielddef';
 import {Mark, ERRORBAR, TICK, AREA, RULE, LINE, POINT} from './mark';
 import {stack} from './stack';
 import {Transform} from './transform';
 import {ROW, COLUMN, X, Y, X2, Y2} from './channel';
 import * as vlEncoding from './encoding';
-import {contains, duplicate, extend, hash, keys, omit, pick, unique} from './util';
+import {contains, duplicate, extend, keys, omit, pick} from './util';
 
 export interface BaseSpec {
   /**
@@ -319,38 +319,18 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
-function fieldDefsOfAllLayers(spec: LayerSpec): FieldDef[] {
-  let fieldDefs: FieldDef[] = [];
-  let fieldDefsDict: any = {};
-
-  for (let i = 0; i < spec.layers.length; i++) {
-    let fieldDefsInALayer = vlEncoding.fieldDefs(spec.layers[i].encoding);
-    for (let j = 0; j < fieldDefsInALayer.length; j++) {
-      let key = hash(fieldDefsInALayer[j]);
-      let value = fieldDefsInALayer[j];
-      if (!fieldDefsDict[key]) {
-        fieldDefsDict[key] = value;
-        fieldDefs.push(value);
-      }
-    }
-  }
-
-  return fieldDefs;
-}
-
-export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec | FacetSpec): FieldDef[] {
+export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec ): FieldDef[] {
   // TODO: refactor this once we have composition
   if (isLayerSpec(spec)) {
-    return fieldDefsOfAllLayers(spec);
-  } else if (isFacetSpec(spec)) {
-    let facet = spec.spec;
-    if (isLayerSpec(facet)) {
-      return fieldDefsOfAllLayers(facet);
-    } else {
-      return vlEncoding.fieldDefs(facet);
-    }
+    let encodings: Encoding[] = [];
+    spec.layers.forEach(function(layer) {
+      encodings.push(layer.encoding);
+    });
+    console.log('*** layers *** return: ', vlEncoding.fieldDefs(encodings));
+    return vlEncoding.fieldDefs(encodings);
   } else {
-    return vlEncoding.fieldDefs(spec.encoding);
+    console.log('*** normal *** return: ', vlEncoding.fieldDefs([spec.encoding]));
+    return vlEncoding.fieldDefs([spec.encoding]);
   }
 };
 
