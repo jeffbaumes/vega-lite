@@ -319,17 +319,27 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
-export function fieldDefs(spec: ExtendedUnitSpec | LayerSpec ): FieldDef[] {
+export function fieldDefs(spec: ExtendedSpec): FieldDef[] {
   // TODO: refactor this once we have composition
   if (isLayerSpec(spec)) {
     let encodings: Encoding[] = [];
     spec.layers.forEach(function(layer) {
       encodings.push(layer.encoding);
     });
-    console.log('*** layers *** return: ', vlEncoding.fieldDefs(encodings));
     return vlEncoding.fieldDefs(encodings);
+  } else if (isFacetSpec(spec)) {
+    let channelFieldDefMappings: Encoding[] = [];
+    channelFieldDefMappings.push(spec.facet);
+    let subSpec = spec.spec;
+    if (isLayerSpec(subSpec)) {
+      subSpec.layers.forEach(function(layer) {
+        channelFieldDefMappings.push(layer.encoding);
+      });
+    } else {
+      channelFieldDefMappings.push(subSpec.encoding);
+    }
+    return vlEncoding.fieldDefs(channelFieldDefMappings);
   } else {
-    console.log('*** normal *** return: ', vlEncoding.fieldDefs([spec.encoding]));
     return vlEncoding.fieldDefs([spec.encoding]);
   }
 };
