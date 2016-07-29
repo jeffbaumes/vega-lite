@@ -10,7 +10,7 @@ import {stack} from './stack';
 import {Transform} from './transform';
 import {ROW, COLUMN, X, Y, X2, Y2} from './channel';
 import * as vlEncoding from './encoding';
-import {contains, duplicate, extend, keys, omit, pick} from './util';
+import {contains, duplicate, extend, hash, keys, omit, pick, unique} from './util';
 
 export interface BaseSpec {
   /**
@@ -319,25 +319,22 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
-function hasFieldDef(fieldDefs: FieldDef[], fieldDef: FieldDef): boolean {
-  for (let i = 0; i < fieldDefs.length; i++) {
-    if (identical(fieldDefs[i], fieldDef)) {
-      return true;
-    }
-  }
-  return false;
-}
-
 function fieldDefsOfAllLayers(spec: LayerSpec): FieldDef[] {
   let fieldDefs: FieldDef[] = [];
+  let fieldDefsDict: any = {};
+
   for (let i = 0; i < spec.layers.length; i++) {
     let fieldDefsInALayer = vlEncoding.fieldDefs(spec.layers[i].encoding);
     for (let j = 0; j < fieldDefsInALayer.length; j++) {
-      if (!hasFieldDef(fieldDefs, fieldDefsInALayer[j])) {
-        fieldDefs.push(fieldDefsInALayer[j]);
+      let key = hash(fieldDefsInALayer[j]);
+      let value = fieldDefsInALayer[j];
+      if (!fieldDefsDict[key]) {
+        fieldDefsDict[key] = value;
+        fieldDefs.push(value);
       }
     }
   }
+
   return fieldDefs;
 }
 
