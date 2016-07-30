@@ -10,7 +10,7 @@ import {stack} from './stack';
 import {Transform} from './transform';
 import {ROW, COLUMN, X, Y, X2, Y2} from './channel';
 import * as vlEncoding from './encoding';
-import {contains, duplicate, extend, keys, omit, pick} from './util';
+import {contains, duplicate, extend, hash, keys, omit, pick, vals} from './util';
 
 export interface BaseSpec {
   /**
@@ -319,29 +319,42 @@ export function alwaysNoOcclusion(spec: ExtendedUnitSpec): boolean {
   return vlEncoding.isAggregate(spec.encoding);
 }
 
+/* Accumulate non-duplicate fieldDefs in a dictionary */
+function accumulate(dict: any, fieldDefs: FieldDef[]): any {
+  if (!dict) {
+    dict = {};
+  }
+  fieldDefs.forEach(function(fieldDef) {
+    let key = hash(fieldDef);
+    if (!dict[key]) {
+      dict[key] = fieldDef;
+    }
+  });
+  return dict;
+}
+
+/* Recursively get fieldDefs from a spec, returns a dictionary of fieldDefs */
+function getFieldDefsRecursively(dict: any, spec: ExtendedSpec): any {
+  if (isLayerSpec(spec)) {
+    spec.layers.forEach(function(layer) {
+      accumulate(dict, vlEncoding.fieldDefs(layer.encoding));
+    });
+  } else if (isFacetSpec(spec)) {
+    accumulate(dict, vlEncoding.fieldDefs(spec.facet));
+    getFieldDefsRecursively(dict, spec.spec);
+  } else {
+    accumulate(dict, vlEncoding.fieldDefs(spec.encoding));
+  }
+  return dict;
+}
+
+/* Returns all non-duplicate fieldDefs in a spec in a flat array */
 export function fieldDefs(spec: ExtendedSpec): FieldDef[] {
   // TODO: refactor this once we have composition
-  if (isLayerSpec(spec)) {
-    let encodings: Encoding[] = [];
-    spec.layers.forEach(function(layer) {
-      encodings.push(layer.encoding);
-    });
-    return vlEncoding.fieldDefs(encodings);
-  } else if (isFacetSpec(spec)) {
-    let channelFieldDefMappings: Encoding[] = [];
-    channelFieldDefMappings.push(spec.facet);
-    let subSpec = spec.spec;
-    if (isLayerSpec(subSpec)) {
-      subSpec.layers.forEach(function(layer) {
-        channelFieldDefMappings.push(layer.encoding);
-      });
-    } else {
-      channelFieldDefMappings.push(subSpec.encoding);
-    }
-    return vlEncoding.fieldDefs(channelFieldDefMappings);
-  } else {
-    return vlEncoding.fieldDefs([spec.encoding]);
-  }
+  let fieldDefsDict = {};
+  getFieldDefsRecursively(fieldDefsDict, spec);
+  console.log('*** recursively got fieldDefs: ***', fieldDefsDict);
+  return vals(fieldDefsDict);
 };
 
 export function getCleanSpec(spec: ExtendedUnitSpec): ExtendedUnitSpec {
