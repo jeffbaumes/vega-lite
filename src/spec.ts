@@ -101,28 +101,8 @@ export type Spec = UnitSpec | FacetSpec | LayerSpec;
 
 /* Custom type guards */
 
-export function isFacetSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is FacetSpec {
-  if (spec['facet'] !== undefined) {
-    let subSpec = spec['spec'];
-    if (isLayerSpec(subSpec)) {
-      return true;
-    } else if (isUnitSpec(subSpec)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-export function isExtendedFacetSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is ExtendedFacetSpec {
-  if (spec['facet'] !== undefined) {
-    let subSpec = spec['spec'];
-    if (isExtendedUnitSpec(subSpec)) {
-      return true;
-    } else if (isFacetSpec(subSpec)) {
-      return true;
-    }
-  }
-  return false;
+export function isSomeFacetSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is FacetSpec | ExtendedFacetSpec {
+  return spec['facet'] !== undefined;
 }
 
 export function isExtendedUnitSpec(spec: ExtendedSpec): spec is ExtendedUnitSpec {
@@ -359,10 +339,7 @@ function getFieldDefsRecursively(dict: any, spec: ExtendedSpec | ExtendedFacetSp
     spec.layers.forEach(function(layer) {
       accumulate(dict, vlEncoding.fieldDefs(layer.encoding));
     });
-  } else if (isFacetSpec(spec)) {
-    accumulate(dict, vlEncoding.fieldDefs(spec.facet));
-    getFieldDefsRecursively(dict, spec.spec);
-  } else if (isExtendedFacetSpec(spec)) {
+  } else if (isSomeFacetSpec(spec)) {
     accumulate(dict, vlEncoding.fieldDefs(spec.facet));
     getFieldDefsRecursively(dict, spec.spec);
   } else {
@@ -376,6 +353,7 @@ export function fieldDefs(spec: ExtendedSpec | ExtendedFacetSpec): FieldDef[] {
   // TODO: refactor this once we have composition
   let fieldDefsDict = {};
   getFieldDefsRecursively(fieldDefsDict, spec);
+  console.log('fieldDefs:', vals(fieldDefsDict).length);
   return vals(fieldDefsDict);
 };
 
