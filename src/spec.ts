@@ -101,8 +101,28 @@ export type Spec = UnitSpec | FacetSpec | LayerSpec;
 
 /* Custom type guards */
 
-export function isFacetSpec(spec: ExtendedSpec): spec is FacetSpec {
-  return spec['facet'] !== undefined;
+export function isFacetSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is FacetSpec {
+  if (spec['facet'] !== undefined) {
+    let subSpec = spec['spec'];
+    if (isLayerSpec(subSpec)) {
+      return true;
+    } else if (isUnitSpec(subSpec)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export function isExtendedFacetSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is ExtendedFacetSpec {
+  if (spec['facet'] !== undefined) {
+    let subSpec = spec['spec'];
+    if (isExtendedUnitSpec(subSpec)) {
+      return true;
+    } else if (isFacetSpec(subSpec)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 export function isExtendedUnitSpec(spec: ExtendedSpec): spec is ExtendedUnitSpec {
@@ -128,7 +148,7 @@ export function isSomeUnitSpec(spec: ExtendedSpec): spec is ExtendedUnitSpec | U
   return spec['mark'] !== undefined;
 }
 
-export function isLayerSpec(spec: ExtendedSpec): spec is LayerSpec {
+export function isLayerSpec(spec: ExtendedSpec | ExtendedFacetSpec): spec is LayerSpec {
   return spec['layers'] !== undefined;
 }
 
@@ -334,12 +354,15 @@ function accumulate(dict: any, fieldDefs: FieldDef[]): any {
 }
 
 /* Recursively get fieldDefs from a spec, returns a dictionary of fieldDefs */
-function getFieldDefsRecursively(dict: any, spec: ExtendedSpec): any {
+function getFieldDefsRecursively(dict: any, spec: ExtendedSpec | ExtendedFacetSpec): any {
   if (isLayerSpec(spec)) {
     spec.layers.forEach(function(layer) {
       accumulate(dict, vlEncoding.fieldDefs(layer.encoding));
     });
   } else if (isFacetSpec(spec)) {
+    accumulate(dict, vlEncoding.fieldDefs(spec.facet));
+    getFieldDefsRecursively(dict, spec.spec);
+  } else if (isExtendedFacetSpec(spec)) {
     accumulate(dict, vlEncoding.fieldDefs(spec.facet));
     getFieldDefsRecursively(dict, spec.spec);
   } else {
@@ -349,11 +372,10 @@ function getFieldDefsRecursively(dict: any, spec: ExtendedSpec): any {
 }
 
 /* Returns all non-duplicate fieldDefs in a spec in a flat array */
-export function fieldDefs(spec: ExtendedSpec): FieldDef[] {
+export function fieldDefs(spec: ExtendedSpec | ExtendedFacetSpec): FieldDef[] {
   // TODO: refactor this once we have composition
   let fieldDefsDict = {};
   getFieldDefsRecursively(fieldDefsDict, spec);
-  console.log('*** recursively got fieldDefs: ***', fieldDefsDict);
   return vals(fieldDefsDict);
 };
 
