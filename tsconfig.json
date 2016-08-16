@@ -77,7 +77,6 @@
     "src/legend.ts",
     "src/mark.ts",
     "src/scale.ts",
-    "src/shorthand.ts",
     "src/sort.ts",
     "src/spec.ts",
     "src/stack.ts",
